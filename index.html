@@ -531,6 +531,7 @@ async function carregarDoSheets(){
     if(!resp.ok) return false;
     const dados = await resp.json();
     if(!Array.isArray(dados)) return false;
+    if(dados.length === 0 && registros.length > 0) return false; // protege dados locais de uma planilha vazia/desincronizada
     registros = dados.map(r=>({
       id: String(r.id), data: r.data, desc: r.desc, tipo: r.tipo,
       categoria: r.categoria, valor: parseFloat(r.valor)||0, pago: r.pago===true||r.pago==='Sim',
@@ -548,6 +549,7 @@ async function carregarClientesDoSheets(){
     if(!resp.ok) return false;
     const dados = await resp.json();
     if(!Array.isArray(dados)) return false;
+    if(dados.length === 0 && clientes.length > 0) return false; // protege dados locais de uma planilha vazia/desincronizada
     clientes = dados.map(c=>({
       id: String(c.id), nome: c.nome, cpfCnpj: c.cpfCnpj, telefone: c.telefone, cidade: c.cidade,
       estado: c.estado, email: c.email, contatoFinanceiro: c.contatoFinanceiro, ativo: c.ativo, obs: c.obs
@@ -1220,13 +1222,16 @@ async function carregarClientes(){
     clientes = c ? JSON.parse(c) : [];
   }catch(e){ clientes = []; }
 
+  if(webhookUrl){ await carregarClientesDoSheets(); }
+
   if(clientes.length === 0 && !localStorage.getItem('clientes_importados_v2')){
     clientes = JSON.parse(JSON.stringify(CLIENTES_IMPORTADOS));
     await salvarClientes();
     try{ localStorage.setItem('clientes_importados_v2', '1'); }catch(e){}
+    if(webhookUrl){
+      for(const c of clientes){ await enviarParaSheets(c, 'upsert', 'cliente'); }
+    }
   }
-
-  if(webhookUrl){ await carregarClientesDoSheets(); }
 }
 
 async function salvarClientes(){
