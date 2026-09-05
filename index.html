@@ -20,6 +20,10 @@
   .sidebar-brand-sub{color:rgba(255,255,255,.55);font-size:11px;margin-top:2px;}
   .sidebar-nav{display:flex;flex-direction:column;}
   .side-group-label{color:rgba(255,255,255,.45);font-size:11px;text-transform:uppercase;letter-spacing:.6px;font-weight:700;padding:16px 20px 6px;}
+  .side-group-toggle{display:flex;align-items:center;justify-content:space-between;margin-top:10px;}
+  .side-group-toggle .grupo-seta{font-size:11px;transition:transform .15s;}
+  .side-group-toggle.aberto .grupo-seta{transform:rotate(90deg);}
+  .side-submenu{display:flex;flex-direction:column;}
   .side-btn{background:none;border:none;color:#cdd6e8;text-align:left;padding:11px 20px;font-size:14px;font-weight:600;cursor:pointer;border-left:3px solid transparent;}
   .side-btn:hover{background:rgba(255,255,255,.06);color:#fff;}
   .side-btn.ativa{background:rgba(255,196,0,.14);color:var(--amarelo);border-left-color:var(--amarelo);}
@@ -142,10 +146,12 @@
     <nav class="sidebar-nav">
       <button type="button" class="side-btn ativa" data-aba="clientes">👥 Clientes</button>
       <button type="button" class="side-btn" data-aba="prospeccao">📍 Prospecção</button>
-      <div class="side-group-label">Financeiro</div>
-      <button type="button" class="side-btn sub" data-aba="lancamentos">Lançamentos</button>
-      <button type="button" class="side-btn sub" data-aba="simulador">Simulador</button>
-      <button type="button" class="side-btn sub" data-aba="dashboard">Dashboard</button>
+      <button type="button" class="side-btn side-group-toggle" id="btnGrupoFinanceiro">💰 Financeiro <span class="grupo-seta">▸</span></button>
+      <div class="side-submenu" id="submenuFinanceiro" style="display:none;">
+        <button type="button" class="side-btn sub" data-aba="lancamentos">Lançamentos</button>
+        <button type="button" class="side-btn sub" data-aba="simulador">Simulador</button>
+        <button type="button" class="side-btn sub" data-aba="dashboard">Dashboard</button>
+      </div>
     </nav>
   </aside>
 
@@ -996,15 +1002,22 @@ function renderSimLista(containerId, vazioId, itens, msgVazio){
 
 document.getElementById('simMes').addEventListener('change', renderSimulador);
 
-document.querySelectorAll('.side-btn').forEach(btn=>{
+document.querySelectorAll('.side-btn[data-aba]').forEach(btn=>{
   btn.addEventListener('click', ()=>{
-    document.querySelectorAll('.side-btn').forEach(b=>b.classList.remove('ativa'));
+    document.querySelectorAll('.side-btn[data-aba]').forEach(b=>b.classList.remove('ativa'));
     document.querySelectorAll('.aba-conteudo').forEach(c=>c.style.display='none');
     btn.classList.add('ativa');
     document.getElementById('aba-' + btn.dataset.aba).style.display = 'block';
     if(btn.dataset.aba === 'simulador'){ popularSimMes(); renderSimulador(); }
     if(btn.dataset.aba === 'clientes' && mapaLeaflet){ setTimeout(()=>mapaLeaflet.invalidateSize(), 150); }
   });
+});
+
+document.getElementById('btnGrupoFinanceiro').addEventListener('click', ()=>{
+  const submenu = document.getElementById('submenuFinanceiro');
+  const aberto = submenu.style.display !== 'none';
+  submenu.style.display = aberto ? 'none' : 'flex';
+  document.getElementById('btnGrupoFinanceiro').classList.toggle('aberto', !aberto);
 });
 
 const JANELA_RECORRENTE_MESES = 12; // quantos meses à frente ficam pré-gerados; renovado automaticamente a cada acesso
@@ -1207,10 +1220,10 @@ async function carregarClientes(){
     clientes = c ? JSON.parse(c) : [];
   }catch(e){ clientes = []; }
 
-  if(clientes.length === 0 && !localStorage.getItem('clientes_importados_v1')){
+  if(clientes.length === 0 && !localStorage.getItem('clientes_importados_v2')){
     clientes = JSON.parse(JSON.stringify(CLIENTES_IMPORTADOS));
     await salvarClientes();
-    try{ localStorage.setItem('clientes_importados_v1', '1'); }catch(e){}
+    try{ localStorage.setItem('clientes_importados_v2', '1'); }catch(e){}
   }
 
   if(webhookUrl){ await carregarClientesDoSheets(); }
